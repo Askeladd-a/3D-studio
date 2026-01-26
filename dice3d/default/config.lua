@@ -1,8 +1,7 @@
 
 config = {
   boardimage=nil,
-  boardlight=light.metal,
-  render_backend="g3d"
+  boardlight=light.metal
 }
 
 function config.boardimage(x,y)

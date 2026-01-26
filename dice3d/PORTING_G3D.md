@@ -1,7 +1,6 @@
 # Porting to g3d (immediate switch)
 
-This project now prefers the **g3d** backend by default (`config.render_backend = "g3d"`).
-When `g3d.lua` is not present in the project root, the app will automatically fall back to the legacy renderer.
+This project now uses **g3d only**. The legacy renderer is no longer used.
 
 ## 1) Add g3d to the project
 Place the `g3d.lua` file next to `main.lua` (same folder as `conf.lua`).
@@ -32,9 +31,6 @@ The g3d renderer now syncs both **positions and rotations** using a stored quate
 The remaining work is to ensure the rotation mapping matches your intended dice orientation and
 to replace the placeholder assets with proper UV‑mapped models.
 
-## 4) Switching back to legacy
-Set `config.render_backend = "legacy"` in `default/config.lua` to return to the old renderer.
-
-## 5) Minimal reference
+## 4) Minimal reference
 If you want a tiny 3D reference project while iterating on g3d usage, the author’s
 `simplest_3d` repo can be a helpful guide for camera and render setup.
