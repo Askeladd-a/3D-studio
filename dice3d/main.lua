@@ -4,7 +4,6 @@ require"base"
 require"loveplus"
 require"vector"
 
-require"render"
 require"stars"
 require"geometry"
 require"view"
@@ -12,6 +11,8 @@ require"light"
 materials = require"materials"
 
 require "default/config"
+
+local g3d_renderer = nil
 
 -- Create four D6 dice by default for playtesting
 dice = {}
@@ -198,6 +199,12 @@ function love.load()
   build_material_list()
   -- prepare rectangles (screen coords) for each die's material button; will be laid out in love.draw if needed
   material_buttons = {}
+
+  if not love.filesystem.getInfo("g3d.lua") then
+    error("[g3d] g3d.lua not found. Install g3d.lua next to main.lua to run.")
+  end
+  g3d_renderer = require "render_g3d"
+  g3d_renderer.init({ dice = dice, box = box })
 end
 
 -- Track previous inside/outside state per die for automatic investigation
@@ -356,33 +363,9 @@ end
 
 
 function love.draw()
-  --use a coordinate system with 0,0 at the center
-  --and an approximate width and height of 10
-  local cx,cy=love.graphics.getWidth()/2,love.graphics.getHeight()/2
-  local scale=cx/4
-  
-  love.graphics.push()
-  love.graphics.translate(cx,cy)
-  love.graphics.scale(scale)
-  -- convert already defined globally; reuse it here
-  
-  --board: make it square using box.x as half-extent
-  local b = math.max(0.001, box.x)
-  render.board(config.boardimage, config.boardlight, -b, b, -b, b)
-  
-  --shadows
-  for i=1,#dice do render.shadow(function(z,f) f() end, dice[i].die, dice[i].star) end
-  render.edgeboard()
-  
-  --dice
-  render.clear()
-  render.bulb(render.zbuffer) --light source
-  for i=1,#dice do render.die(render.zbuffer, dice[i].die, dice[i].star) end
-  render.paint()
-
-  -- (debug overlay removed)
-
-  love.graphics.pop()
+  if g3d_renderer then
+    g3d_renderer.draw({ dice = dice, box = box })
+  end
 
   -- Physics debug overlay: show inside/outside state and velocities
   -- disabled by default to hide debug information in the corner
