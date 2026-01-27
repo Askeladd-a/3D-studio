@@ -37,10 +37,12 @@ end
 
 function newD6star(size)
   if not size then size=1 end
-  size=size/1.6
-  local new={ {size,size,size}, {size,-size,size}, {-size,-size,size}, {-size,size,size},
-              {size,size,-size}, {size,-size,-size}, {-size,-size,-size}, {-size,size,-size} }
-  return clone(star,new):set(nil,nil,nil,size*size*size*2,size*size*size*2)
+  local half = size / 1.6
+  local new={ {half,half,half}, {half,-half,half}, {-half,-half,half}, {-half,half,half},
+              {half,half,-half}, {half,-half,-half}, {-half,-half,-half}, {-half,half,-half} }
+  local s = clone(star,new):set(nil,nil,nil,half*half*half*2,half*half*half*2)
+  s.renderScale = half
+  return s
 end
 d6= {
   faces={{1,2,3,4}, {5,6,7,8}, {1,2,6,5},{2,3,7,6},{3,4,8,7},{4,1,5,8}}

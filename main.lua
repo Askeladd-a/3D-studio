@@ -5,7 +5,6 @@ dream = require("3DreamEngine.3DreamEngine")
 require"loveplus"
 require"vector"
 
-require"render"
 require"stars"
 require"geometry"
 require"view"
@@ -15,7 +14,6 @@ materials = require"materials"
 require "default/config"
 
 dice = {}
-local use_dream_renderer = true
 local dream_light = nil
 local board_half = 10
 local board_height = 10
@@ -248,7 +246,7 @@ function love.wheelmoved(dx,dy)
 end
 
 function love.resize(w, h)
-  if use_dream_renderer and dream and dream.resize then
+  if dream and dream.resize then
     dream:resize(w, h)
   end
 end
@@ -371,7 +369,7 @@ end
 
 
 function love.draw()
-  if use_dream_renderer and dream and dream.prepare then
+  if dream and dream.prepare then
     dream:prepare()
     if dream_light then
       dream:addLight(dream_light)
@@ -396,9 +394,10 @@ function love.draw()
       else
         w, x, y, z = 1, 0, 0, 0
       end
-      local sx = 1
-      local sy = 1
-      local sz = 1
+      local scale = (dice[i].star and dice[i].star.renderScale) or 1
+      local sx = scale
+      local sy = scale
+      local sz = scale
       local m11 = 1 - 2 * y * y - 2 * z * z
       local m12 = 2 * x * y - 2 * z * w
       local m13 = 2 * x * z + 2 * y * w
@@ -424,44 +423,6 @@ function love.draw()
     love.graphics.setColor(1,1,1)
     local fps = love.timer.getFPS()
     love.graphics.print(string.format("FPS: %d", fps), 8, 8)
-  else
-    --board: make it square using box.x as half-extent
-    local b = math.max(0.001, box.x)
-    render.board(config.boardimage, config.boardlight, -b, b, -b, b)
-    
-    --shadows
-    for i=1,#dice do
-      render.shadow(function(z,f) f() end, dice[i].die, dice[i].star)
-    end
-    render.edgeboard()
-
-    --dice
-    render.clear()
-    render.bulb(render.zbuffer) --light source
-    for i=1,#dice do
-      render.die(render.zbuffer, dice[i].die, dice[i].star)
-    end
-    render.paint()
-
-    -- (debug overlay removed)
-
-    -- Physics debug overlay: show inside/outside state and velocities
-    -- disabled by default to hide debug information in the corner
-    local show_physics_debug = false
-    if show_physics_debug then
-      love.graphics.setColor(255,255,255)
-      local sx,sy = 5,15
-      for i=1,#dice do
-        local s = dice[i].star
-        local inside_x = s.position[1] >= -box.x and s.position[1] <= box.x
-        local inside_y = s.position[2] >= -box.y and s.position[2] <= box.y
-        local inside_z = s.position[3] >= 0 and s.position[3] <= box.z
-        local inside = inside_x and inside_y and inside_z and "IN" or "OUT"
-        local v = s.velocity
-        local msg = string.format("die %d: %s pos=(%.2f,%.2f,%.2f) vel=(%.2f,%.2f,%.2f)", i, inside, s.position[1],s.position[2],s.position[3], v[1],v[2],v[3])
-        love.graphics.print(msg, sx, sy + (i-1)*15)
-      end
-    end
   end
   -- Draw simple UI button (screen coords)
   love.graphics.setColor(0.2, 0.2, 0.25, 0.95)
