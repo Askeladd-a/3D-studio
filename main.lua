@@ -247,6 +247,12 @@ function love.wheelmoved(dx,dy)
   if dy<0 then view.move(0.91) end
 end
 
+function love.resize(w, h)
+  if use_dream_renderer and dream and dream.resize then
+    dream:resize(w, h)
+  end
+end
+
 function love.update(dt)
   dbg.fps=(dbg.fps or 100)*99/100 +0.01/dt
   local dx,dy=love.mouse.delta()
