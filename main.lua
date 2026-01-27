@@ -1,7 +1,7 @@
 dbg={}
 
 require"base"
-dream = require("3DreamEngine.init")
+dream = require("3DreamEngine.3DreamEngine")
 require"loveplus"
 require"vector"
 
