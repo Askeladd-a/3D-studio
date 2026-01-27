@@ -408,10 +408,14 @@ function love.draw()
       local m31 = 2 * x * z - 2 * y * w
       local m32 = 2 * y * z + 2 * x * w
       local m33 = 1 - 2 * x * x - 2 * y * y
+      -- swap Y/Z to map physics Z-up coordinates to 3DreamEngine Y-up
+      local r11, r12, r13 = m11, m13, m12
+      local r21, r22, r23 = m31, m33, m32
+      local r31, r32, r33 = m21, m23, m22
       local transform = dream.mat4({
-        m11 * sx, m12 * sy, m13 * sz, pos[1],
-        m21 * sx, m22 * sy, m23 * sz, pos[3],
-        m31 * sx, m32 * sy, m33 * sz, pos[2],
+        r11 * sx, r12 * sy, r13 * sz, pos[1],
+        r21 * sx, r22 * sy, r23 * sz, pos[3],
+        r31 * sx, r32 * sy, r33 * sz, pos[2],
         0, 0, 0, 1,
       })
       dream:draw(dream.cubeObject, transform)

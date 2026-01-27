@@ -294,6 +294,7 @@ end
 
 --bounce inside two parallel infinite walls
 function star:parallel(normal, min, max, restitution, friction)
+  local slop = (self.pos_slop or box.pos_slop or 0)
   local lowest, highest = nil,nil
   local lowesta, highesta = min,max
   for i=1,#self do
@@ -310,11 +311,11 @@ function star:parallel(normal, min, max, restitution, friction)
   
   if lowest then
     self:wall(lowest,normal,restitution,friction)
-    self.position=self.position+normal*(min-lowesta)
+    self.position=self.position+normal*(min-lowesta+slop)
   end
   if highest then
     self:wall(highest,-normal,restitution,friction)
-    self.position=self.position+normal*(max-highesta)
+    self.position=self.position+normal*(max-highesta-slop)
   end
   
 end
