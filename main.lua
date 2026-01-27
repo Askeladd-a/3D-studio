@@ -81,7 +81,8 @@ local function pick_focused_at_screen(sx, sy)
   if not view then return nil end
   local d = {}
   for i=1,#dice do
-    local px,py,pz,p = view.project(unpack(dice[i].star.position))
+    local pos = dice[i].star.position
+    local px,py,pz,p = view.project(pos[1], pos[3], pos[2])
     table.insert(d,{dice[i], px, py, pz, p})
   end
   table.sort(d, function(a,b) return a[4] > b[4] end)
@@ -369,6 +370,9 @@ end
 
 
 function love.draw()
+  if not (dream and dream.prepare) then
+    return
+  end
   if dream and dream.prepare then
     dream:prepare()
     if dream_light then
@@ -407,10 +411,10 @@ function love.draw()
       local m31 = 2 * x * z - 2 * y * w
       local m32 = 2 * y * z + 2 * x * w
       local m33 = 1 - 2 * x * x - 2 * y * y
-      -- swap Y/Z to map physics Z-up coordinates to 3DreamEngine Y-up
-      local r11, r12, r13 = m11, m13, m12
-      local r21, r22, r23 = m31, m33, m32
-      local r31, r32, r33 = m21, m23, m22
+      -- swap Y/Z rows to map physics Z-up coordinates to 3DreamEngine Y-up
+      local r11, r12, r13 = m11, m12, m13
+      local r21, r22, r23 = m31, m32, m33
+      local r31, r32, r33 = m21, m22, m23
       local transform = dream.mat4({
         r11 * sx, r12 * sy, r13 * sz, pos[1],
         r21 * sx, r22 * sy, r23 * sz, pos[3],
@@ -487,7 +491,7 @@ function love.draw()
   if tooltip_always_on then
     for i=1,#dice do
       local s = dice[i].star
-      local px,py = view.project(unpack(s.position))
+      local px,py = view.project(s.position[1], s.position[3], s.position[2])
       local tx, ty = px + 8, py + 8
       local matname = get_material_name(s) or "none"
       local lines = {
