@@ -59,9 +59,7 @@ local cameraTarget = {0, 0, 0}
 -- Inizializza dadi, vassoio, camera
 function dice3d.load()
     -- Crea mesh vassoio (piano)
-    trayMesh = g3d.newModel({
-        {"plane.obj", "textures/marble2.png"}
-    }, {tray.x, tray.y, tray.z}, {0,0,0}, {tray.width, 1, tray.depth})
+    trayMesh = g3d.newModel("models/plane.obj", "textures/marble2.png", {tray.x, tray.y, tray.z}, {0,0,0}, {tray.width, 1, tray.depth})
     -- trayMesh:setColor(0.7, 0.6, 0.4, 1) -- rimosso: lasciamo solo la texture
 
     -- Crea bordi vassoio (4 muri)
@@ -71,7 +69,7 @@ function dice3d.load()
     -- Bordo nord
     local wallColor = {0.3, 0.2, 0.1, 1} -- marrone scuro
     local function makeWall(pos, scale)
-        local wall = g3d.newModel({{"cube.obj", false, false}}, pos, {0,0,0}, scale)
+        local wall = g3d.newModel("models/cube.obj", nil, pos, {0,0,0}, scale)
         wall:setColor(unpack(wallColor))
         return wall
     end
@@ -87,7 +85,7 @@ function dice3d.load()
     dice = {}
     for i=1,3 do
         local d = {
-            model = g3d.newModel({{"cube.obj", "textures/dice_face"..i..".png", false}}, {math.random(-2,2), 2, math.random(-2,2)}, {0,0,0}, {0.5,0.5,0.5}),
+            model = g3d.newModel("models/cube.obj", "textures/"..i..".png", {math.random(-2,2), 2, math.random(-2,2)}, {0,0,0}, {0.5,0.5,0.5}),
             pos = {math.random(-2,2), 2, math.random(-2,2)},
             vel = {math.random()-0.5, 0, math.random()-0.5},
             rot = {math.random()*math.pi*2, math.random()*math.pi*2, math.random()*math.pi*2},
