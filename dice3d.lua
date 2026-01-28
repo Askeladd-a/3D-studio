@@ -97,7 +97,8 @@ function dice3d.load()
     end
 
     -- Camera 3D
-    camera = g3d.newCamera({0, 8, 12}, {0,0,0})
+    camera = g3d.camera
+    camera.lookAt(0, 8, 12, 0, 0, 0)
 end
 
 -- Update fisica e collisioni
@@ -200,7 +201,6 @@ end
 
 -- Rendering dadi e vassoio
 function dice3d.draw()
-    camera:activate()
     -- Tray
     trayMesh:draw()
     -- Bordi
@@ -216,7 +216,6 @@ function dice3d.draw()
         d.model:setColor(unpack(d.color))
         d.model:draw()
     end
-    camera:deactivate()
     love.graphics.setColor(1,1,1,1)
 end
 
@@ -254,8 +253,12 @@ local function updateCamera()
     local x = cameraTarget[1] + math.cos(cameraAngle) * cameraRadius
     local y = cameraHeight
     local z = cameraTarget[3] + math.sin(cameraAngle) * cameraRadius
-    camera:setPosition(x, y, z)
-    camera:setLookAt(cameraTarget[1], cameraTarget[2], cameraTarget[3])
+    if camera.lookAt then
+        camera.lookAt(x, y, z, cameraTarget[1], cameraTarget[2], cameraTarget[3])
+    else
+        camera:setPosition(x, y, z)
+        camera:setLookAt(cameraTarget[1], cameraTarget[2], cameraTarget[3])
+    end
 end
 
 -- Input per controllare la camera (da chiamare in love.keypressed e love.wheelmoved)
