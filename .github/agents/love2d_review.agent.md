@@ -15,3 +15,9 @@ handoffs:
 - Esegui comandi di run/test disponibili (o scrivi checklist riproducibile).
 - Controlla perf/GC/stutter e propone fix concreti.
 - Output include Evidence (files read / commands run / docs consulted).
+
+# Skill Auto-Use Policy
+- Se il task riguarda entrypoints LÖVE (love.load/update/draw), state machine, seed o fixed timestep: usa la skill `love2d-core`.
+- Se riguarda dadi/tray/3D/fisica/collisioni/faccia superiore: usa la skill `dice3d`.
+- Se riguarda stutter/GC/FPS: usa la skill `qa-perf`.
+- Se non è stata caricata alcuna skill ma il task lo richiede: chiedi 1 riga all’utente per conferma oppure suggerisci di ripetere la richiesta includendo il nome skill.
