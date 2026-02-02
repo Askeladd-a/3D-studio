@@ -219,3 +219,77 @@ function render.edgeboard()
   
 end
 
+-- Draws a 3D raised border around the board to simulate a dice tray
+function render.tray_border(border_width, border_height, border_color)
+  border_width = border_width or 0.8   -- width of the border rim
+  border_height = border_height or 1.2 -- height of the border walls
+  -- Colors in 0-255 format (dark wood brown)
+  border_color = border_color or {90, 56, 31}  -- RGB: dark wood brown
+  
+  local x1, x2, y1, y2 = -10, 10, -10, 10
+  if render.board_extents then x1, x2, y1, y2 = unpack(render.board_extents) end
+  
+  -- Outer edge coordinates (board + border width)
+  local ox1, ox2, oy1, oy2 = x1 - border_width, x2 + border_width, y1 - border_width, y2 + border_width
+  
+  -- Helper: draw a quad given 4 corners (in screen coords)
+  local function draw_quad(c1, c2, c3, c4, color, shade)
+    local r, g, b = color[1] * shade, color[2] * shade, color[3] * shade
+    love.graphics.setColor(r, g, b, 255)  -- explicit alpha=255 for full opacity
+    love.graphics.polygon("fill", c1[1], c1[2], c2[1], c2[2], c3[1], c3[2], c4[1], c4[2])
+  end
+  
+  -- Project all 16 key points (inner/outer at z=0 and z=border_height)
+  local inner_bottom = {
+    {view.project(x1, y1, 0)},
+    {view.project(x2, y1, 0)},
+    {view.project(x2, y2, 0)},
+    {view.project(x1, y2, 0)}
+  }
+  local outer_bottom = {
+    {view.project(ox1, oy1, 0)},
+    {view.project(ox2, oy1, 0)},
+    {view.project(ox2, oy2, 0)},
+    {view.project(ox1, oy2, 0)}
+  }
+  local inner_top = {
+    {view.project(x1, y1, border_height)},
+    {view.project(x2, y1, border_height)},
+    {view.project(x2, y2, border_height)},
+    {view.project(x1, y2, border_height)}
+  }
+  local outer_top = {
+    {view.project(ox1, oy1, border_height)},
+    {view.project(ox2, oy1, border_height)},
+    {view.project(ox2, oy2, border_height)},
+    {view.project(ox1, oy2, border_height)}
+  }
+  
+  -- Draw the 4 outer walls (vertical faces on outside)
+  -- Front wall (y1 side - usually bottom of screen)
+  draw_quad(outer_bottom[1], outer_bottom[2], outer_top[2], outer_top[1], border_color, 0.7)
+  -- Right wall (x2 side)
+  draw_quad(outer_bottom[2], outer_bottom[3], outer_top[3], outer_top[2], border_color, 0.85)
+  -- Back wall (y2 side - usually top of screen)
+  draw_quad(outer_bottom[3], outer_bottom[4], outer_top[4], outer_top[3], border_color, 1.0)
+  -- Left wall (x1 side)
+  draw_quad(outer_bottom[4], outer_bottom[1], outer_top[1], outer_top[4], border_color, 0.75)
+  
+  -- Draw the 4 inner walls (vertical faces on inside, facing the dice)
+  -- These are slightly darker as they're in shadow
+  draw_quad(inner_bottom[2], inner_bottom[1], inner_top[1], inner_top[2], border_color, 0.5)
+  draw_quad(inner_bottom[3], inner_bottom[2], inner_top[2], inner_top[3], border_color, 0.55)
+  draw_quad(inner_bottom[4], inner_bottom[3], inner_top[3], inner_top[4], border_color, 0.6)
+  draw_quad(inner_bottom[1], inner_bottom[4], inner_top[4], inner_top[1], border_color, 0.5)
+  
+  -- Draw the top surface (horizontal rim)
+  -- Front rim (y1 side)
+  draw_quad(outer_top[1], outer_top[2], inner_top[2], inner_top[1], border_color, 0.9)
+  -- Right rim (x2 side)  
+  draw_quad(outer_top[2], outer_top[3], inner_top[3], inner_top[2], border_color, 0.95)
+  -- Back rim (y2 side)
+  draw_quad(outer_top[3], outer_top[4], inner_top[4], inner_top[3], border_color, 1.0)
+  -- Left rim (x1 side)
+  draw_quad(outer_top[4], outer_top[1], inner_top[1], inner_top[4], border_color, 0.88)
+end
+

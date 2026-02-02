@@ -390,6 +390,9 @@ function love.draw()
   for i=1,#dice do render.shadow(function(z,f) f() end, dice[i].die, dice[i].star) end
   render.edgeboard()
   
+  -- Draw 3D raised border to make it look like a dice tray
+  render.tray_border(0.8, 1.5)  -- border_width=0.8, border_height=1.5
+  
   --dice
   render.clear()
   render.bulb(render.zbuffer) --light source
