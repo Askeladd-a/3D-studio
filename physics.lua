@@ -114,21 +114,36 @@ function box:update(dt)
       
       -- Skip physics for sleeping bodies (from manual)
       if not s.asleep then
-        -- CRITICAL: Count vertices touching ground to determine stability
+        -- CRITICAL: Count vertices touching ground AND check they're coplanar (same face)
         local vertices_on_ground = 0
-        local ground_z = 0.08  -- tighter tolerance for vertex-on-ground detection
+        local ground_z = 0.05  -- tighter tolerance for vertex-on-ground detection
+        local ground_vertices_z = {}  -- store Z values of grounded vertices
         for k=1,#s do
           local vertex_world_z = s[k][3] + s.position[3]
           if vertex_world_z <= ground_z then
             vertices_on_ground = vertices_on_ground + 1
+            table.insert(ground_vertices_z, vertex_world_z)
           end
         end
         
-        -- Lock only if 4+ vertices touch ground (stable face resting) AND almost no movement
+        -- Check if grounded vertices are COPLANAR (same Z, meaning flat on one face)
+        local is_flat = false
+        if vertices_on_ground >= 4 and #ground_vertices_z >= 4 then
+          local z_min = math.huge
+          local z_max = -math.huge
+          for _, z in ipairs(ground_vertices_z) do
+            z_min = math.min(z_min, z)
+            z_max = math.max(z_max, z)
+          end
+          -- Vertices are coplanar if Z spread is tiny (< 0.03)
+          is_flat = (z_max - z_min) < 0.03
+        end
+        
+        -- Lock only if 4+ vertices on ground, coplanar, AND almost no movement
         local v_mag = s.velocity:abs()
         local w_mag = s.angular:abs()
-        if vertices_on_ground >= 4 and v_mag < 0.35 and w_mag < 0.30 then
-          -- Dice is stable and resting: LOCK completely
+        if is_flat and v_mag < 0.20 and w_mag < 0.15 then
+          -- Dice is stable and resting flat: LOCK completely
           s.velocity = vector{0,0,0}
           s.angular = vector{0,0,0}
           s.asleep = true

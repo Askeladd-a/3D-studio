@@ -2,7 +2,7 @@
 view={
   yaw=1.2,
   pitch=1.2,
-  distance=20,
+  distance=12,
   focus=5
 }
 view.cos_pitch, view.sin_pitch=math.cos(view.pitch), math.sin(view.pitch)

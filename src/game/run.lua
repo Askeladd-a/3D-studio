@@ -1,0 +1,138 @@
+-- src/game/run.lua
+-- Gestisce una run completa (fascicolo di N folii)
+
+local Folio = require("src.game.folio")
+
+local Run = {}
+Run.__index = Run
+
+-- Tipi di fascicolo e numero di folii
+Run.FASCICOLI = {
+    BIFOLIO = 2,
+    DUERNO = 4,
+    TERNIONE = 6,
+    QUATERNIONE = 8,
+    QUINTERNO = 10,
+    SESTERNO = 12,
+}
+
+--- Crea una nuova run
+---@param fascicolo_type string Tipo di fascicolo
+---@param seed number Seed per RNG riproducibile (opzionale)
+function Run.new(fascicolo_type, seed)
+    local self = setmetatable({}, Run)
+    
+    self.fascicolo = fascicolo_type or "BIFOLIO"
+    self.total_folii = Run.FASCICOLI[self.fascicolo] or 2
+    
+    -- Seed riproducibile
+    self.seed = seed or os.time()
+    math.randomseed(self.seed)
+    if love and love.math then
+        love.math.setRandomSeed(self.seed)
+    end
+    print("[Run] Seed: " .. self.seed)
+    
+    -- Stato run
+    self.current_folio_index = 1
+    self.current_folio = Folio.new(self.fascicolo, self.seed + 1)
+    self.completed_folii = {}
+    
+    -- Risorse player
+    self.reputation = 20  -- HP della run
+    self.coins = 0
+    
+    -- Inventario (pigmenti, leganti scelti)
+    self.inventory = {
+        pigments = {},
+        binders = {},
+    }
+    
+    -- Stato
+    self.game_over = false
+    self.victory = false
+    
+    return self
+end
+
+--- Avanza al folio successivo
+function Run:nextFolio()
+    if self.current_folio.completed then
+        -- Calcola reward
+        local reward = self:calculateFolioReward()
+        self.coins = self.coins + reward.coins
+        self.reputation = self.reputation + reward.reputation
+        
+        print(string.format("[Run] Folio %d completato! +%d coins, +%d rep", 
+            self.current_folio_index, reward.coins, reward.reputation))
+        
+        table.insert(self.completed_folii, self.current_folio)
+        self.current_folio_index = self.current_folio_index + 1
+        
+        -- Check vittoria
+        if self.current_folio_index > self.total_folii then
+            self.victory = true
+            print("[Run] VITTORIA! Fascicolo completato!")
+            return true, "victory"
+        end
+        
+        -- Nuovo folio
+        self.current_folio = Folio.new(self.fascicolo, self.seed + self.current_folio_index)
+        return true, "next"
+        
+    elseif self.current_folio.busted then
+        -- Folio perso
+        local rep_loss = 3
+        self.reputation = self.reputation - rep_loss
+        print(string.format("[Run] Folio BUST! -%d reputation (now: %d)", rep_loss, self.reputation))
+        
+        -- Check game over
+        if self.reputation <= 0 then
+            self.game_over = true
+            print("[Run] GAME OVER! Reputazione esaurita!")
+            return false, "game_over"
+        end
+        
+        -- Nuovo folio (stessa posizione, si riprova)
+        self.current_folio = Folio.new(self.fascicolo, self.seed + self.current_folio_index + 1000)
+        return true, "retry"
+    end
+    
+    return false, "in_progress"
+end
+
+--- Calcola reward per folio completato
+function Run:calculateFolioReward()
+    local reward = {coins = 30, reputation = 0}  -- Base
+    
+    local folio = self.current_folio
+    for elem, bonus in pairs(Folio.BONUS) do
+        if folio.elements[elem].completed then
+            reward.coins = reward.coins + (bonus.coins or 0)
+            reward.reputation = reward.reputation + (bonus.reputation or 0)
+        end
+    end
+    
+    -- Pardon: bonus se pochi stain e nessun peccato
+    if folio.stain_count < 2 then
+        reward.reputation = reward.reputation + 2
+        print("[Run] Pardon! +2 reputation")
+    end
+    
+    return reward
+end
+
+--- Stato per UI
+function Run:getStatus()
+    return {
+        fascicolo = self.fascicolo,
+        folio = string.format("%d/%d", self.current_folio_index, self.total_folii),
+        reputation = self.reputation,
+        coins = self.coins,
+        seed = self.seed,
+        game_over = self.game_over,
+        victory = self.victory,
+    }
+end
+
+return Run

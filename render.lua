@@ -215,9 +215,9 @@ function render.die(action, die, star)
     --prepare face data
     local face=die.faces[i]
     local xy,z,c={},0,vector()
-    for i=1,#face do
-      c=c+star[face[i]]
-      local p = projected[face[i]]
+    for j=1,#face do
+      c=c+star[face[j]]
+      local p = projected[face[j]]
       table.insert(xy,p[1])
       table.insert(xy,p[2])
       z=z+p[3]
@@ -227,8 +227,9 @@ function render.die(action, die, star)
     
     --light it up
     local strength=die.material(c+star.position, c:norm())
-    local strength=die.material(c+star.position, c:norm())
-    local color={ die.color[1]*strength, die.color[2]*strength, die.color[3]*strength, die.color[4] }
+    -- Usa colore per faccia se disponibile, altrimenti colore singolo
+    local baseColor = (die.faceColors and die.faceColors[i]) or die.color
+    local color={ baseColor[1]*strength, baseColor[2]*strength, baseColor[3]*strength, baseColor[4] or 255 }
     local text={die.text[1]*strength,die.text[2]*strength,die.text[3]*strength}
     local front=c..(1*c+star.position-cam)<=0
     --if it is visible then render
