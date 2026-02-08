@@ -33,7 +33,7 @@ function SceneManager.switch(name, ...)
         SceneManager.current:enter(...)
     end
     
-    print("[SceneManager] Switched to: " .. name)
+    log("[SceneManager] Switched to: " .. name)
 end
 
 --- Update della scena corrente

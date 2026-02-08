@@ -466,7 +466,7 @@ function star:push(impulse, displacement)
       fh:write(string.format("[ANOMALY] time=%.3f star:push clamped dv=%.3f -> %.3f pos=(%.3f,%.3f,%.3f)\n", t, dv_mag, dv_max, self.position[1], self.position[2], self.position[3]))
       fh:close()
     else
-      print("[ANOMALY] could not open physics_log.txt to write anomaly")
+      log("[ANOMALY] could not open physics_log.txt to write anomaly")
     end
     dv = dv * (dv_max / dv_mag)
   end

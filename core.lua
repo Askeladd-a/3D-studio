@@ -180,3 +180,11 @@ function rotation.metatable.__call(r,x,y,z)
 end
 
 --end of core.lua
+
+-- Simple runtime logging helper: enable by setting _G.VERBOSE_LOGS = true
+_G.VERBOSE_LOGS = _G.VERBOSE_LOGS or false
+function log(...)
+  if _G.VERBOSE_LOGS then
+    print(...)
+  end
+end

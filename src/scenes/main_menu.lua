@@ -1,10 +1,11 @@
 -- src/scenes/main_menu.lua
--- Scena menu principale stile "libri impilati"
+-- Scena menu principale stile "libri impilati" (UI ridisegnata: pulsanti orizzontali)
 
 local MainMenu = {}
 local music = nil
 local menu_font = nil
 local music_play_attempted = false
+local menu_bg = nil
 
 local menu_items = {
     {label = "Continue", enabled = false},
@@ -20,14 +21,15 @@ local hovered = nil -- Indice del pulsante sotto il mouse
 function MainMenu:enter()
     -- Reset selezione
     selected = 2
-    print("[MainMenu] enter() called")
+    log("[MainMenu] enter() called")
     -- Log audio subsystem state
     if love.audio and love.audio.getActiveSourceCount then
         local ok, cnt = pcall(function() return love.audio.getActiveSourceCount() end)
-        print(string.format("[MainMenu] love.audio active source count: %s", tostring(cnt)))
+        log(string.format("[MainMenu] love.audio active source count: %s", tostring(cnt)))
     else
-        print("[MainMenu] love.audio API not available or missing getActiveSourceCount")
+        log("[MainMenu] love.audio API not available or missing getActiveSourceCount")
     end
+
     -- Load menu font once (safe)
     if not menu_font then
         if love.filesystem and love.filesystem.getInfo and love.filesystem.getInfo("resources/font/EagleLake-Regular.ttf") then
@@ -36,13 +38,23 @@ function MainMenu:enter()
             end)
             if ok and f then
                 menu_font = f
-                print("[MainMenu] menu font loaded")
+                log("[MainMenu] menu font loaded")
             else
                 menu_font = nil
-                print("[MainMenu] failed to load menu font, will fallback")
+                log("[MainMenu] failed to load menu font, will fallback")
             end
         end
     end
+
+    -- load menu background image (optional)
+    if not menu_bg then
+        if love.filesystem and love.filesystem.getInfo and love.filesystem.getInfo("resources/ui/menu.png") then
+            pcall(function()
+                menu_bg = love.graphics.newImage("resources/ui/menu.png")
+            end)
+        end
+    end
+
     -- Simplified: force load the converted .ogg file
     if not music then
         local ogg = "resources/sounds/maintitle.ogg"
@@ -50,55 +62,50 @@ function MainMenu:enter()
             local ok, src = pcall(function()
                 return love.audio.newSource(ogg, "stream")
             end)
-            print(string.format("[MainMenu] try load .ogg ok=%s src=%s", tostring(ok), tostring(src)))
             if ok and src then
                 music = src
                 music:setLooping(true)
-                music:setVolume(0.7)
+                -- Lower default menu music volume to be less intrusive
+                music:setVolume(0.2)
                 if love.audio and love.audio.setVolume then pcall(function() love.audio.setVolume(1) end) end
                 local played_ok = pcall(function() music:play() end)
-                print(string.format("[MainMenu] play called .ogg success=%s isPlaying=%s", tostring(played_ok), tostring(music:isPlaying())))
+                log(string.format("[MainMenu] play called .ogg success=%s isPlaying=%s", tostring(played_ok), tostring(music:isPlaying())))
             else
-                print("[MainMenu] failed to load maintitle.ogg")
+                -- silent failure loading menu music
             end
         else
-            print("[MainMenu] maintitle.ogg not found")
+            -- maintitle.ogg not found
         end
     elseif not music:isPlaying() then
         pcall(function() music:play() end)
     end
-    -- Extra diagnostics and fallback attempts
+
+    -- Optional silent diagnostics and fallbacks (no console logs)
     if music then
-        local ok, dur = pcall(function() return music:getDuration() end)
-        print(string.format("[MainMenu] music exists. duration_ok=%s duration=%s", tostring(ok), tostring(dur)))
-        local ok2, vol = pcall(function() return music:getVolume() end)
-        print(string.format("[MainMenu] music:getVolume ok=%s vol=%s", tostring(ok2), tostring(vol)))
-        local ok3, isplay = pcall(function() return music:isPlaying() end)
-        print(string.format("[MainMenu] music:isPlaying ok=%s isPlaying=%s", tostring(ok3), tostring(isplay)))
-        -- Try love.audio.play as alternative
-        local okp, errp = pcall(function() love.audio.play(music) end)
-        print(string.format("[MainMenu] love.audio.play called ok=%s err=%s", tostring(okp), tostring(errp)))
-        -- If still not playing, try static SoundData fallback
+        -- attempt to ensure it's playing; keep diagnostics silent
+        pcall(function() music:getDuration() end)
+        pcall(function() music:getVolume() end)
+        pcall(function() music:isPlaying() end)
+        pcall(function() love.audio.play(music) end)
+
+        -- If still not playing, try static SoundData fallback (silent)
         local still_playing = false
         pcall(function() still_playing = music:isPlaying() end)
         if not still_playing and love.sound and love.sound.newSoundData then
             local ogg = "resources/sounds/maintitle.ogg"
             local oksd, sd = pcall(function() return love.sound.newSoundData(ogg) end)
-            print(string.format("[MainMenu] newSoundData ok=%s sd=%s", tostring(oksd), tostring(sd)))
             if oksd and sd then
                 local oksrc, ssrc = pcall(function() return love.audio.newSource(sd) end)
-                print(string.format("[MainMenu] newSource from SoundData ok=%s src=%s", tostring(oksrc), tostring(ssrc)))
                 if oksrc and ssrc then
                     ssrc:setLooping(true)
-                    ssrc:setVolume(0.7)
+                    ssrc:setVolume(0.2)
                     pcall(function() love.audio.play(ssrc) end)
-                    print(string.format("[MainMenu] played SoundData source isPlaying=%s", tostring(ssrc:isPlaying())))
                     music = ssrc
                 end
             end
         end
     else
-        print("[MainMenu] music is nil after load attempts")
+        -- music not available (silent)
     end
 end
 
@@ -113,49 +120,78 @@ function MainMenu:update(dt)
     -- If we have a loaded music Source but it's not playing, try once to play it
     if music and not music:isPlaying() and not music_play_attempted then
         music_play_attempted = true
-        local ok, err = pcall(function() music:play() end)
-        print(string.format("[MainMenu] retry play attempted ok=%s err=%s isPlaying=%s", tostring(ok), tostring(err), tostring(music:isPlaying())))
+        pcall(function() music:play() end)
     end
 end
 
 function MainMenu:draw()
     local w, h = love.graphics.getWidth(), love.graphics.getHeight()
-    love.graphics.setBackgroundColor(0.12, 0.10, 0.08, 1)
-
-    -- Tavolo (base)
-    love.graphics.setColor(0.25, 0.18, 0.10, 1)
-    love.graphics.rectangle("fill", 0, h*0.7, w, h*0.3)
-
-    -- Stack libri
-    local book_w, book_h = 340, 60
-    local stack_x, stack_y = w*0.25, h*0.25
-    for i, item in ipairs(menu_items) do
-        local y = stack_y + (i-1)*(book_h+8)
-        -- Ombra
-        love.graphics.setColor(0.08, 0.06, 0.04, 0.7)
-        love.graphics.rectangle("fill", stack_x+8, y+8, book_w, book_h)
-        -- Libro
-        if i == selected or i == hovered then
-            love.graphics.setColor(0.9, 0.75, 0.3, 1) -- Highlight oro
+    -- Ensure full-screen scissor reset
+    if love.graphics.setScissor then love.graphics.setScissor() end
+    -- draw menu background if available, otherwise fallback to solid black
+    if menu_bg then
+        local bw, bh = menu_bg:getWidth(), menu_bg:getHeight()
+        -- Non ritagliare e non ingrandire: adattiamo l'immagine senza upscaling
+        local scale = math.min(1, math.min(w / bw, h / bh))
+        local dw, dh = bw * scale, bh * scale
+        love.graphics.setColor(1, 1, 1, 1)
+        love.graphics.draw(menu_bg, w/2 - dw/2, h/2 - dh/2, 0, scale, scale)
+    else
+        if love.graphics.clear then
+            love.graphics.clear(0, 0, 0, 1)
         else
-            love.graphics.setColor(0.35, 0.25, 0.12, 1)
+            love.graphics.setColor(0.0, 0.0, 0.0, 1)
+            love.graphics.rectangle("fill", 0, 0, w, h)
         end
-        love.graphics.rectangle("fill", stack_x, y, book_w, book_h, 16, 16)
-        -- Bordo dorato per Settings
+    end
+
+    -- Tavolo (base) removed for full-black background in menu
+    -- (was: love.graphics.setColor(0.25,0.18,0.10) + rectangle at bottom)
+
+    -- Pulsanti semplici (sinistra) — UI ridisegnata
+    local btn_w, btn_h = 340, 60
+    local left_x, stack_y = math.max(24, w * 0.04), h * 0.15
+    local spacing = 12
+    for i, item in ipairs(menu_items) do
+        local y = stack_y + (i-1) * (btn_h + spacing)
+        -- Ombra
+        love.graphics.setColor(0, 0, 0, 0.6)
+        love.graphics.rectangle("fill", left_x + 6, y + 6, btn_w, btn_h, 12, 12)
+
+        -- Colore di sfondo del pulsante (stato normale/hover/selected)
+        if i == selected then
+            love.graphics.setColor(0.93, 0.8, 0.28, 1)
+        elseif i == hovered then
+            love.graphics.setColor(0.95, 0.85, 0.45, 1)
+        else
+            love.graphics.setColor(0.33, 0.24, 0.12, 1)
+        end
+        love.graphics.rectangle("fill", left_x, y, btn_w, btn_h, 12, 12)
+
+        -- Bordo: dorato per Settings, sottile altrimenti
         if item.label == "Settings" then
             love.graphics.setColor(0.9, 0.75, 0.3, 1)
             love.graphics.setLineWidth(3)
-            love.graphics.rectangle("line", stack_x+4, y+4, book_w-8, book_h-8, 12, 12)
+            love.graphics.rectangle("line", left_x + 3, y + 3, btn_w - 6, btn_h - 6, 10, 10)
+        else
+            love.graphics.setColor(0.6, 0.5, 0.35, 1)
+            love.graphics.setLineWidth(2)
+            love.graphics.rectangle("line", left_x + 3, y + 3, btn_w - 6, btn_h - 6, 10, 10)
         end
-        -- Testo
-        love.graphics.setColor((i == selected or i == hovered) and {0.15, 0.10, 0.05, 1} or {0.95, 0.90, 0.80, 1})
+        love.graphics.setLineWidth(1)
+
+        -- Testo orizzontale, allineato a sinistra con padding
+        love.graphics.setColor((i == selected or i == hovered) and {0.1, 0.06, 0.03, 1} or {0.95, 0.90, 0.80, 1})
         local font = menu_font or love.graphics.getFont()
         love.graphics.setFont(font)
-        love.graphics.printf(item.label, stack_x+12, y+book_h/2-18, book_w-24, "left")
-        -- Disabilitato
+        local text = item.label or ""
+        local padding = 18
+        love.graphics.printf(text, left_x + padding, y + (btn_h - font:getHeight()) / 2, btn_w - padding * 2, "left")
+
+        -- Overlay disabilitato
         if not item.enabled then
-            love.graphics.setColor(0.5, 0.5, 0.5, 0.5)
-            love.graphics.rectangle("fill", stack_x, y, book_w, book_h, 16, 16)
+            love.graphics.setColor(0, 0, 0, 0.45)
+            love.graphics.rectangle("fill", left_x, y, btn_w, btn_h, 12, 12)
         end
     end
 
@@ -180,7 +216,7 @@ function MainMenu:keypressed(key)
         elseif item.label == "Quit" then
             love.event.quit()
         else
-            print("[MainMenu] Selected: " .. item.label)
+            log("[MainMenu] Selected: " .. item.label)
         end
     end
 end
@@ -188,11 +224,12 @@ end
 function MainMenu:mousepressed(x, y, button)
     if button ~= 1 then return end
     local w, h = love.graphics.getWidth(), love.graphics.getHeight()
-    local book_w, book_h = 340, 60
-    local stack_x, stack_y = w*0.25, h*0.25
+    local btn_w, btn_h = 340, 60
+    local left_x, stack_y = math.max(24, w * 0.04), h * 0.15
+    local spacing = 12
     for i, item in ipairs(menu_items) do
-        local yb = stack_y + (i-1)*(book_h+8)
-        if x >= stack_x and x <= stack_x+book_w and y >= yb and y <= yb+book_h then
+        local yb = stack_y + (i-1) * (btn_h + spacing)
+        if x >= left_x and x <= left_x + btn_w and y >= yb and y <= yb + btn_h then
             if item.enabled then
                 selected = i
                 hovered = i
@@ -205,15 +242,14 @@ end
 
 function MainMenu:mousemoved(x, y, dx, dy)
     local w, h = love.graphics.getWidth(), love.graphics.getHeight()
-    local book_w, book_h = 340, 60
-    local stack_x, stack_y = w*0.25, h*0.25
+    local btn_w, btn_h = 340, 60
+    local left_x, stack_y = math.max(24, w * 0.04), h * 0.15
+    local spacing = 12
     hovered = nil
     for i, item in ipairs(menu_items) do
-        local yb = stack_y + (i-1)*(book_h+8)
-        if x >= stack_x and x <= stack_x+book_w and y >= yb and y <= yb+book_h then
-            if item.enabled then
-                hovered = i
-            end
+        local yb = stack_y + (i-1) * (btn_h + spacing)
+        if x >= left_x and x <= left_x + btn_w and y >= yb and y <= yb + btn_h then
+            if item.enabled then hovered = i end
             break
         end
     end
@@ -226,7 +262,7 @@ function MainMenu:activate(idx)
     elseif item.label == "Quit" then
         love.event.quit()
     else
-        print("[MainMenu] Selected: " .. item.label)
+        log("[MainMenu] Selected: " .. item.label)
     end
 end
 

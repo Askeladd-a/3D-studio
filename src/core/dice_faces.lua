@@ -228,19 +228,19 @@ end
 function M.debugPrintFace(face, maxTier)
     local faceData = M.DiceFaces[face]
     if not faceData then
-        print("Faccia invalida:", face)
+        log("Faccia invalida:", face)
         return
     end
     
-    print(string.format("=== Faccia %d (%s) ===", face, faceData.family))
-    print("Fallback:", faceData.fallback)
-    print("Pigmenti disponibili (maxTier=" .. maxTier .. "):")
+    log(string.format("=== Faccia %d (%s) ===", face, faceData.family))
+    log("Fallback:", faceData.fallback)
+    log("Pigmenti disponibili (maxTier=" .. maxTier .. "):")
     
     local available = getAvailablePigments(face, maxTier)
     for _, p in ipairs(available) do
         local pigment = Pigments.get(p.name)
         local color = pigment and pigment.color or {0,0,0}
-        print(string.format("  - %s (tier %d, peso %.2f) RGB(%d,%d,%d)",
+        log(string.format("  - %s (tier %d, peso %.2f) RGB(%d,%d,%d)",
             p.name, p.tier, p.weight, color[1], color[2], color[3]))
     end
 end

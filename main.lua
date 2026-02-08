@@ -17,7 +17,6 @@ local Content = require("src.content")
 local DiceFaces = Content.DiceFaces
 
 -- Scene references (popolate in love.load)
-local splash_scene = nil
 local main_menu_scene = nil
 local run_scene = nil
 
@@ -120,8 +119,6 @@ function love.load()
     -- Registra scene
     SceneManager.register("scriptorium", Scriptorium)
     -- Register UI scenes after LÖVE subsystems ready (safe)
-    splash_scene = require("src.scenes.splash")
-    SceneManager.register("Splash", splash_scene)
     main_menu_scene = require("src.scenes.main_menu")
     SceneManager.register("MainMenu", main_menu_scene)
     local run_mod = require("src.game.run")
@@ -137,10 +134,9 @@ function love.load()
         rollAllDice()
     end
     
-    -- Avvio scena: mostra prima la splash e poi il menu
-    print("[love.load] switching to Splash")
-    -- Avvio dalla splash
-    SceneManager.switch("Splash")
+    -- Avvio scena: direttamente al menu principale (splash rimosso)
+    log("[love.load] switching to MainMenu")
+    SceneManager.switch("MainMenu")
 end
 
 function love.update(dt)
@@ -170,178 +166,8 @@ function love.update(dt)
     end
 end
 
-function love.draw()
-    local w = love.graphics.getWidth()
-    local h = love.graphics.getHeight()
-
-    -- If we're showing Splash or MainMenu, let SceneManager draw and skip the game draw
-    if SceneManager.current and (SceneManager.current == splash_scene or SceneManager.current == main_menu_scene) then
-        SceneManager.draw()
-        return
-    end
-    
-    -- ========================
-    -- LAYOUT: 3/4 pergamena, 1/4 tray + bottoni
-    -- ========================
-    
-    local UI = require("src.ui")
-    local folio = Scriptorium.run and Scriptorium.run.current_folio or nil
-    
-    -- Calcolo layout
-    local btn_area_h = 50   -- Altezza area bottoni
-    local tray_h = (h - btn_area_h) * 0.25  -- 1/4 dello spazio rimanente
-    local parch_h = (h - btn_area_h) * 0.75  -- 3/4 dello spazio rimanente
-    local tray_y = parch_h
-    local btn_y = h - btn_area_h
-    
-    -- ========================
-    -- TRAY 3D PRIMA (con scissor per non sovrascrivere)
-    -- ========================
-    love.graphics.setScissor(0, tray_y, w, tray_h)
-    -- Sfondo marrone tray (riempie anche "dietro" il 3D)
-    love.graphics.setColor(0.36, 0.25, 0.20)
-    love.graphics.rectangle("fill", 0, tray_y, w, tray_h)
-
-    -- Tray 3D ruotato verso il player, "in piano", abbassato
-    local tray_cx = w / 2
-        local tray_cy = tray_y + tray_h * 0.62  -- centrato meglio nella fascia
-    local scale = math.min(w, tray_h) / 7.5
-
-    -- Camera: quasi dall’alto, lato lungo verso il player
-    local old_dist = view.distance
-    local old_pitch = view.pitch
-    local old_yaw = view.yaw
-    view.distance = 8
-        view.pitch = 0.85  -- inclinata verso il centro del tray
-    view.yaw = 0  -- lato lungo orizzontale verso il player
-
-    love.graphics.push()
-    love.graphics.translate(tray_cx, tray_cy)
-    love.graphics.scale(scale)
-
-    -- Board
-    local bx = math.max(0.001, box.x)
-    local by = math.max(0.001, box.y)
-    render.board(config.boardimage, config.boardlight, -bx, bx, -by, by)
-
-    -- Shadows
-    for i = 1, #dice do
-        render.shadow(function(z, f) f() end, dice[i].die, dice[i].star)
-    end
-    -- render.edgeboard() -- removed: covers outside tray with black (caused unwanted black background)
-
-    -- Z-buffer pass
-    render.clear()
-    render.tray_border(render.zbuffer, 0.8, 0.9)
-    render.bulb(render.zbuffer)
-    for i = 1, #dice do
-        render.die(render.zbuffer, dice[i].die, dice[i].star)
-    end
-    render.paint()
-
-    love.graphics.pop()
-    love.graphics.setScissor()  -- Reset scissor
-    view.distance = old_dist  -- restore
-    view.pitch = old_pitch
-    view.yaw = old_yaw
-    
-    -- ========================
-    -- SFONDO MARRONCINO (resto dello schermo)
-    -- ========================
-    -- Area sopra tray (pergamena)
-    love.graphics.setColor(0.36, 0.25, 0.20)
-    love.graphics.rectangle("fill", 0, 0, w, tray_y)
-    -- Area sotto tray (bottoni)
-    love.graphics.rectangle("fill", 0, tray_y + tray_h, w, btn_area_h)
-    
-    -- ========================
-    -- PERGAMENA (3/4 superiore)
-    -- ========================
-    local parch_margin = 20
-    local parch_w = math.min(400, w - parch_margin * 2)
-    local parch_x = w / 2 - parch_w / 2
-    local parch_y_pos = parch_margin / 2
-    local parch_inner_h = parch_h - parch_margin
-    
-    -- Background pergamena
-    love.graphics.setColor(0.95, 0.90, 0.78)
-    love.graphics.rectangle("fill", parch_x, parch_y_pos, parch_w, parch_inner_h, 6, 6)
-    love.graphics.setColor(0.65, 0.55, 0.40)
-    love.graphics.setLineWidth(3)
-    love.graphics.rectangle("line", parch_x, parch_y_pos, parch_w, parch_inner_h, 6, 6)
-    love.graphics.setLineWidth(1)
-    
-    -- Contenuto pergamena
-    if folio then
-        drawParchmentContent(parch_x, parch_y_pos, parch_w, parch_inner_h, folio)
-    end
-    
-    -- ========================
-    -- BOTTONI E ISTRUZIONI (sotto tray)
-    -- ========================
-    roll_button.x = w / 2 - roll_button.w / 2
-    roll_button.y = btn_y + 5
-    
-    -- Conta dadi non kept
-    local unkept_count = 0
-    for i = 1, #dice do
-        if not dice[i].kept then unkept_count = unkept_count + 1 end
-    end
-    
-    -- Testo bottone dinamico
-    if unkept_count == 0 then
-        roll_button.text = "Nessun dado"
-    elseif unkept_count == #dice then
-        roll_button.text = "Lancia tutti"
-    else
-        roll_button.text = "Rilancia " .. unkept_count
-    end
-    
-    love.graphics.setColor(0.22, 0.17, 0.12, 0.95)
-    love.graphics.rectangle("fill", roll_button.x, roll_button.y, roll_button.w, roll_button.h, 5, 5)
-    love.graphics.setColor(0.75, 0.65, 0.50)
-    love.graphics.setLineWidth(2)
-    love.graphics.rectangle("line", roll_button.x, roll_button.y, roll_button.w, roll_button.h, 5, 5)
-    love.graphics.setLineWidth(1)
-    
-    love.graphics.setColor(0.95, 0.90, 0.80)
-    local font = love.graphics.getFont()
-    local fh = font and font:getHeight() or 14
-    love.graphics.printf(roll_button.text, roll_button.x, roll_button.y + (roll_button.h - fh) / 2, roll_button.w, "center")
-    
-    -- Istruzioni (accanto al bottone)
-    love.graphics.setColor(0.75, 0.70, 0.60)
-    love.graphics.printf("[Click dado = tieni/rilascia]  [SPACE = rilancia]", 0, btn_y + 15, w, "center")
-    
-    -- FPS (corner)
-    love.graphics.setColor(0.5, 0.45, 0.40)
-    love.graphics.print(string.format("FPS: %d", love.timer.getFPS()), 8, h - 20)
-
-    -- Wet Buffer overlay (placeholder: bordo blu)
-    if #WetBuffer > 0 then
-        love.graphics.setColor(0.2, 0.4, 0.9, 0.18)
-        love.graphics.rectangle("fill", parch_x, parch_y_pos, parch_w, parch_inner_h, 6, 6)
-        love.graphics.setColor(0.2, 0.4, 0.9, 0.5)
-        love.graphics.setLineWidth(3)
-        love.graphics.rectangle("line", parch_x, parch_y_pos, parch_w, parch_inner_h, 6, 6)
-        love.graphics.setLineWidth(1)
-    end
-
-    -- Bust overlay (placeholder: bordo rosso)
-    if lastBust then
-        love.graphics.setColor(0.9, 0.1, 0.1, 0.18)
-        love.graphics.rectangle("fill", parch_x, parch_y_pos, parch_w, parch_inner_h, 6, 6)
-        love.graphics.setColor(0.9, 0.1, 0.1, 0.5)
-        love.graphics.setLineWidth(3)
-        love.graphics.rectangle("line", parch_x, parch_y_pos, parch_w, parch_inner_h, 6, 6)
-        love.graphics.setLineWidth(1)
-    end
-
-    -- Dadi KEPT indicator (sopra tray, piccolo)
-    drawKeptDiceIndicator(w, tray_y)
-    -- Sbavature/macchie (debug)
-    love.graphics.setColor(0.5, 0.45, 0.40)
-    love.graphics.print(string.format("Sbavature: %d   Macchie: %d", sbavature, macchie), w-180, h-20)
+-- love.draw removed: rendering is expected to be handled elsewhere (scenes or a custom renderer).
+-- If you need to reintroduce a centralized draw, restore this function or implement an alternative render loop.
 -- Piazzamento temporaneo (Wet Buffer)
 function addToWetBuffer(element, row, col, die, pigment)
     table.insert(WetBuffer, {element=element, row=row, col=col, die=die, pigment=pigment})
@@ -421,7 +247,6 @@ function turnLoop(folio, dice)
             break
         end
     end
-end
 end
 
 --- Disegna contenuto pergamena (pattern di tutti gli elementi)
@@ -518,6 +343,27 @@ function drawKeptDiceIndicator(screen_w, tray_y)
             
             idx = idx + 1
         end
+    end
+end
+
+-- Minimal love.draw: clears the framebuffer and delegates to the SceneManager.
+function love.draw()
+    local w = love.graphics.getWidth()
+    local h = love.graphics.getHeight()
+
+    -- Ensure no scissor/canvas is active and clear the framebuffer to solid black
+    if love.graphics.setScissor then love.graphics.setScissor() end
+    if love.graphics.clear then
+        love.graphics.clear(0, 0, 0, 1)
+    else
+        love.graphics.setColor(0, 0, 0, 1)
+        love.graphics.rectangle("fill", 0, 0, w, h)
+    end
+    love.graphics.setColor(1, 1, 1, 1)
+
+    -- Delegate rendering to the active scene (scenes handle their own drawing)
+    if SceneManager and SceneManager.draw then
+        SceneManager.draw()
     end
 end
 
@@ -659,7 +505,7 @@ function rollAllDice()
     end
     
     if #to_roll == 0 then
-        print("[Dice] Nessun dado da lanciare!")
+        log("[Dice] Nessun dado da lanciare!")
         return
     end
     
@@ -695,10 +541,7 @@ function rollAllDice()
         to_center[1] = to_center[1] / len
         to_center[2] = to_center[2] / len
     end
-    
-    local vertical_speed = -(20 + rnd() * 10)
-    local lateral_speed = math.abs(vertical_speed) * (0.8 + rnd() * 0.3)
-    
+
     local base_velocity = vector{
         to_center[1] * lateral_speed,
         to_center[2] * lateral_speed,
@@ -723,7 +566,7 @@ function rollAllDice()
         }
     end
     
-    print("[Dice] Lanciati " .. #to_roll .. " dadi")
+    log("[Dice] Lanciati " .. #to_roll .. " dadi")
 end
 
 --- Rilascia tutti i dadi (reset kept per nuovo turno)
@@ -741,11 +584,11 @@ function toggleDieKept(die_index)
     dice[die_index].kept = not dice[die_index].kept
     
     -- Salva valore se kept
-    if dice[die_index].kept then
+        if dice[die_index].kept then
         dice[die_index].value = readDieFace(dice[die_index].star)
-        print("[Dice] Dado " .. die_index .. " tenuto (valore " .. dice[die_index].value .. ")")
+        log("[Dice] Dado " .. die_index .. " tenuto (valore " .. dice[die_index].value .. ")")
     else
-        print("[Dice] Dado " .. die_index .. " rilasciato")
+        log("[Dice] Dado " .. die_index .. " rilasciato")
     end
 end
 
@@ -816,7 +659,7 @@ end
 --- Callback quando i dadi si fermano
 function onDiceSettled()
     local values = readDiceValues()
-    print("[Dice] Settled: " .. table.concat(values, ", "))
+    log("[Dice] Settled: " .. table.concat(values, ", "))
     
     -- Notifica scena
     if Scriptorium.onDiceSettled then

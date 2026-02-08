@@ -503,9 +503,9 @@ end
 --- Stampa pattern per debug
 ---@param pattern table
 function M.debugPrint(pattern)
-    print(string.format("=== %s [%s] (diff: %d, tokens: %d) ===",
+    log(string.format("=== %s [%s] (diff: %d, tokens: %d) ===",
         pattern.name, pattern.element, pattern.difficulty, M.getInitialTokens(pattern)))
-    print(string.format("    Griglia: %dx%d", pattern.rows, pattern.cols))
+    log(string.format("    Griglia: %dx%d", pattern.rows, pattern.cols))
     
     for row = 1, pattern.rows do
         local line = "    "
@@ -519,7 +519,7 @@ function M.debugPrint(pattern)
                 line = line .. string.format("[%s] ", c:sub(1,3):upper())
             end
         end
-        print(line)
+        log(line)
     end
 end
 
@@ -527,12 +527,12 @@ end
 function M.debugPrintAll()
     local elements = {"TEXT", "DROPCAPS", "BORDERS", "CORNERS", "MINIATURE"}
     for _, elem in ipairs(elements) do
-        print("\n" .. string.rep("═", 50))
-        print("ELEMENTO: " .. elem)
-        print(string.rep("═", 50))
+        log("\n" .. string.rep("═", 50))
+        log("ELEMENTO: " .. elem)
+        log(string.rep("═", 50))
         for _, p in ipairs(M.getByElement(elem)) do
             M.debugPrint(p)
-            print("")
+            log("")
         end
     end
 end

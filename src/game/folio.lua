@@ -257,7 +257,7 @@ end
 
 --- Callback completamento elemento
 function Folio:onElementCompleted(element)
-    print("[Folio] Completato: " .. element)
+    log("[Folio] Completato: " .. element)
     
     -- Sblocca elemento successivo
     local idx = nil
@@ -267,7 +267,7 @@ function Folio:onElementCompleted(element)
     if idx and idx < #Folio.ELEMENTS then
         local next_elem = Folio.ELEMENTS[idx + 1]
         self.elements[next_elem].unlocked = true
-        print("[Folio] Sbloccato: " .. next_elem)
+        log("[Folio] Sbloccato: " .. next_elem)
     end
     
     -- Applica bonus
@@ -279,7 +279,7 @@ function Folio:onElementCompleted(element)
     -- Check completamento folio (TEXT + MINIATURE obbligatori)
     if self.elements.TEXT.completed and self.elements.MINIATURE.completed then
         self.completed = true
-        print("[Folio] FOLIO COMPLETATO!")
+        log("[Folio] FOLIO COMPLETATO!")
     end
 end
 
@@ -295,17 +295,17 @@ function Folio:addStain(amount)
         self.shield = self.shield - absorbed
         amount = amount - absorbed
         if absorbed > 0 then
-            print("[Folio] Shield ha assorbito " .. absorbed .. " macchia/e")
+            log("[Folio] Shield ha assorbito " .. absorbed .. " macchia/e")
         end
     end
     
     self.stain_count = self.stain_count + amount
-    print(string.format("[Folio] Macchie: %d/%d", self.stain_count, self.stain_threshold))
+    log(string.format("[Folio] Macchie: %d/%d", self.stain_count, self.stain_threshold))
     
     -- Check bust
     if self.stain_count >= self.stain_threshold then
         self.busted = true
-        print("[Folio] BUST! Troppa macchia!")
+        log("[Folio] BUST! Troppa macchia!")
         return true
     end
     
@@ -316,7 +316,7 @@ end
 function Folio:removeStain(amount)
     amount = amount or 1
     self.stain_count = math.max(0, self.stain_count - amount)
-    print(string.format("[Folio] Macchia rimossa. Ora: %d/%d", self.stain_count, self.stain_threshold))
+    log(string.format("[Folio] Macchia rimossa. Ora: %d/%d", self.stain_count, self.stain_threshold))
 end
 
 --- Stato debug
@@ -343,12 +343,12 @@ end
 
 --- Debug print
 function Folio:debugPrint()
-    print("\n" .. string.rep("═", 60))
-    print("FOLIO: " .. self.fascicolo)
-    print(string.format("Macchie: %d/%d | Shield: %d | Busted: %s | Completed: %s",
+    log("\n" .. string.rep("═", 60))
+    log("FOLIO: " .. self.fascicolo)
+    log(string.format("Macchie: %d/%d | Shield: %d | Busted: %s | Completed: %s",
         self.stain_count, self.stain_threshold, self.shield,
         tostring(self.busted), tostring(self.completed)))
-    print(string.rep("─", 60))
+    log(string.rep("─", 60))
     
     for _, elemName in ipairs(Folio.ELEMENTS) do
         local elem = self.elements[elemName]
@@ -377,11 +377,11 @@ function Folio:debugPrint()
                     end
                     line = line .. " "
                 end
-                print(line)
+                log(line)
             end
         end
     end
-    print(string.rep("═", 60))
+    log(string.rep("═", 60))
 end
 
 
@@ -418,7 +418,7 @@ function Run.new(fascicolo_type, seed)
     if love and love.math then
         love.math.setRandomSeed(self.seed)
     end
-    print("[Run] Seed: " .. self.seed)
+    log("[Run] Seed: " .. self.seed)
     
     -- Stato run
     self.current_folio_index = 1
@@ -459,7 +459,7 @@ function Run:nextFolio()
         -- Check vittoria
         if self.current_folio_index > self.total_folii then
             self.victory = true
-            print("[Run] VITTORIA! Fascicolo completato!")
+            log("[Run] VITTORIA! Fascicolo completato!")
             return true, "victory"
         end
         
@@ -476,7 +476,7 @@ function Run:nextFolio()
         -- Check game over
         if self.reputation <= 0 then
             self.game_over = true
-            print("[Run] GAME OVER! Reputazione esaurita!")
+            log("[Run] GAME OVER! Reputazione esaurita!")
             return false, "game_over"
         end
         
@@ -503,7 +503,7 @@ function Run:calculateFolioReward()
     -- Pardon: bonus se pochi stain e nessun peccato
     if folio.stain_count < 2 then
         reward.reputation = reward.reputation + 2
-        print("[Run] Pardon! +2 reputation")
+        log("[Run] Pardon! +2 reputation")
     end
     
     return reward

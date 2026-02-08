@@ -31,7 +31,7 @@ function Run.new(fascicolo_type, seed)
     if love and love.math then
         love.math.setRandomSeed(self.seed)
     end
-    print("[Run] Seed: " .. self.seed)
+    log("[Run] Seed: " .. self.seed)
     
     -- Stato run
     self.current_folio_index = 1
@@ -63,7 +63,7 @@ function Run:nextFolio()
         self.coins = self.coins + reward.coins
         self.reputation = self.reputation + reward.reputation
         
-        print(string.format("[Run] Folio %d completato! +%d coins, +%d rep", 
+        log(string.format("[Run] Folio %d completato! +%d coins, +%d rep", 
             self.current_folio_index, reward.coins, reward.reputation))
         
         table.insert(self.completed_folii, self.current_folio)
@@ -72,7 +72,7 @@ function Run:nextFolio()
         -- Check vittoria
         if self.current_folio_index > self.total_folii then
             self.victory = true
-            print("[Run] VITTORIA! Fascicolo completato!")
+            log("[Run] VITTORIA! Fascicolo completato!")
             return true, "victory"
         end
         
@@ -84,12 +84,12 @@ function Run:nextFolio()
         -- Folio perso
         local rep_loss = 3
         self.reputation = self.reputation - rep_loss
-        print(string.format("[Run] Folio BUST! -%d reputation (now: %d)", rep_loss, self.reputation))
+        log(string.format("[Run] Folio BUST! -%d reputation (now: %d)", rep_loss, self.reputation))
         
         -- Check game over
         if self.reputation <= 0 then
             self.game_over = true
-            print("[Run] GAME OVER! Reputazione esaurita!")
+            log("[Run] GAME OVER! Reputazione esaurita!")
             return false, "game_over"
         end
         
@@ -116,7 +116,7 @@ function Run:calculateFolioReward()
     -- Pardon: bonus se pochi stain e nessun peccato
     if folio.stain_count < 2 then
         reward.reputation = reward.reputation + 2
-        print("[Run] Pardon! +2 reputation")
+        log("[Run] Pardon! +2 reputation")
     end
     
     return reward

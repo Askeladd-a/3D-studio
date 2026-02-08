@@ -24,7 +24,7 @@ function Scriptorium:enter(fascicolo_type, seed)
     self.message = nil
     self.message_timer = 0
     
-    print("[Scriptorium] Nuova run iniziata: " .. self.run.fascicolo)
+    log("[Scriptorium] Nuova run iniziata: " .. self.run.fascicolo)
 end
 
 --- Esce dalla scena
@@ -201,7 +201,7 @@ function Scriptorium:keypressed(key)
         end
     elseif key == "escape" then
         -- Torna al menu (futuro)
-        print("[Scriptorium] ESC pressed - menu not implemented yet")
+        log("[Scriptorium] ESC pressed - menu not implemented yet")
     elseif key == "r" then
         -- Restart run (debug)
         self:enter(self.run and self.run.fascicolo or "BIFOLIO")
